@@ -1,16 +1,26 @@
 package com.example.musicappui.ui.theme
 
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.BottomNavigation
 import androidx.compose.material.BottomNavigationItem
+import androidx.compose.material.ExperimentalMaterialApi
+import androidx.compose.material.ModalBottomSheetLayout
+import androidx.compose.material.ModalBottomSheetValue
 import androidx.compose.material.ScaffoldState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
@@ -20,9 +30,11 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material.Scaffold
+import androidx.compose.material.rememberModalBottomSheetState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -33,6 +45,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.NavHostController
@@ -44,7 +57,9 @@ import com.example.musicappui.AccountDialog
 import com.example.musicappui.AccountView
 import com.example.musicappui.BrowseScreen
 import com.example.musicappui.Home
+import com.example.musicappui.Library
 import com.example.musicappui.MainViewModel
+import com.example.musicappui.R
 import com.example.musicappui.Screen
 import com.example.musicappui.Subscription
 import com.example.musicappui.screeninBottom
@@ -53,13 +68,16 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterialApi::class)
 @Composable
 fun MainView() {
     val scope:CoroutineScope = rememberCoroutineScope()
     val scaffoldState: ScaffoldState = rememberScaffoldState()
     val viewModel: MainViewModel = viewModel()
-    // Allow us to find out which screen we are currently now.
+    val isSheetFullScreen by remember {
+        mutableStateOf(false)
+    }
+    val modifier = if(isSheetFullScreen) Modifier.fillMaxSize() else Modifier.fillMaxWidth()        // Allow us to find out which screen we are currently now.
     val controller: NavController = rememberNavController()
     val navBackStackEntry by controller.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
@@ -72,21 +90,35 @@ fun MainView() {
     val dialogOpen = remember {
         mutableStateOf(false)
     }
+    val modalSheetState = androidx.compose.material.rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden,
+        confirmValueChange = {
+            it != ModalBottomSheetValue.HalfExpanded
+        })
+   val roundedCornerRadius = if(isSheetFullScreen) 0.dp else 12.dp
+
     val bottomBar: @Composable () ->Unit = {
         if(currentScreen is Screen.DrawerScreen || currentScreen == Screen.BottomScreen.Home){
             BottomNavigation(
-                Modifier.wrapContentSize()
+                Modifier.wrapContentSize(),
+                backgroundColor =   Color(0xFF4d3300)
             ) {
              screeninBottom.forEach { 
                  item ->
+                 val isSelected = currentRoute == item.bRoute
+                 val tint = if(isSelected)Color.White else Color.Black
+                 Log.d("Navigation", "Item: ${item.bTitle}, Current Route: $currentRoute, Is Selected")
                  BottomNavigationItem(selected = currentRoute == item.bRoute,
                      onClick = { controller.navigate(item.bRoute) },
                      icon = {
-                         Icon(painter = painterResource(id = item.icon),
+
+                         Icon(
+                             tint = tint,
+                             painter = painterResource(id = item.icon),
                              contentDescription = item.bTitle )
                      },
                      label = {
-                         Text(text = item.bTitle)
+                         Text(text = item.bTitle,
+                             color = tint)
                      },
                      selectedContentColor = Color.White,
                      unselectedContentColor = Color.Black)
@@ -94,10 +126,17 @@ fun MainView() {
             }
         }
     }
+ModalBottomSheetLayout(
+    sheetState = modalSheetState,
+    sheetShape = RoundedCornerShape(topStart =roundedCornerRadius, topEnd = roundedCornerRadius ),
+    sheetContent = {
+    MoreBottomSheet(modifier= modifier)
+} ) {
     Scaffold(
         bottomBar = bottomBar,
         topBar = {
             TopAppBar(title = { Text(title.value,
+
                 color = Color.White)},
                 modifier = Modifier.background(
                     Brush.verticalGradient(
@@ -128,13 +167,13 @@ fun MainView() {
         drawerContent = {
             LazyColumn(Modifier.padding(16.dp)){
                 items(screensinDrawer){
-                    item->
+                        item->
                     DrawerItem(selected = currentRoute == item.dRoute, item = item) {
-               scope.launch {
-                scaffoldState.drawerState.close()
-               }
+                        scope.launch {
+                            scaffoldState.drawerState.close()
+                        }
                         if(item.dRoute == "add_account"){
-                        dialogOpen.value = true
+                            dialogOpen.value = true
                         }else {
                             controller.navigate(item.dRoute)
                             title.value = item.dTitle
@@ -144,11 +183,14 @@ fun MainView() {
             }
         }
     ) {
-      Navigation(navController = controller, viewModel = viewModel, pd =it )
-       AccountDialog(dialogOpen = dialogOpen)
+        Navigation(navController = controller, viewModel = viewModel, pd =it )
+        AccountDialog(dialogOpen = dialogOpen)
 
     }
 }
+}
+
+
 @Composable
 fun DrawerItem(
     selected: Boolean,
@@ -170,6 +212,28 @@ fun DrawerItem(
             style = MaterialTheme.typography.bodyLarge)
     }
 }
+
+@Composable
+fun MoreBottomSheet(modifier: Modifier){
+  Box(
+      Modifier
+          .fillMaxWidth()
+          .height(300.dp)
+          .background(
+              Color(0xFF4d3300)
+          )
+  ) {
+  Column(modifier = modifier.padding(16.dp),
+      verticalArrangement = Arrangement.SpaceBetween) {
+             Row(modifier= modifier.padding(end = 16.dp)) {
+                 Icon(painter = painterResource(id = R.drawable.baseline_settings_24),
+                     contentDescription = "Settings")
+                 Text(text = "Settings", fontSize = 20.sp,
+                     color = Color.White)
+             }
+  }
+  }
+}
 @Composable
 fun Navigation(navController: NavController,viewModel: MainViewModel,pd:PaddingValues){
     NavHost(navController = navController as NavHostController,
@@ -188,7 +252,7 @@ fun Navigation(navController: NavController,viewModel: MainViewModel,pd:PaddingV
        BrowseScreen()
         }
         composable(Screen.BottomScreen.Browse.route){
-
+          Library()
         }
 
     }
