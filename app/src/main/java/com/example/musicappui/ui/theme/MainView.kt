@@ -6,8 +6,11 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.BottomNavigation
+import androidx.compose.material.BottomNavigationItem
 import androidx.compose.material.ScaffoldState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
@@ -16,7 +19,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import com.example.musicappui.ui.theme.Navigation
 import androidx.compose.material.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -38,8 +40,13 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.example.musicappui.AccountDialog
+import com.example.musicappui.AccountView
+import com.example.musicappui.Home
 import com.example.musicappui.MainViewModel
 import com.example.musicappui.Screen
+import com.example.musicappui.Subscription
+import com.example.musicappui.screeninBottom
 import com.example.musicappui.screensinDrawer
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -61,9 +68,35 @@ fun MainView() {
     val title = remember{
           mutableStateOf(currentScreen.title)
     }
+    val dialogOpen = remember {
+        mutableStateOf(false)
+    }
+    val bottomBar: @Composable () ->Unit = {
+        if(currentScreen is Screen.DrawerScreen || currentScreen == Screen.BottomScreen.Home){
+            BottomNavigation(
+                Modifier.wrapContentSize()
+            ) {
+             screeninBottom.forEach { 
+                 item ->
+                 BottomNavigationItem(selected = currentRoute == item.bRoute,
+                     onClick = { controller.navigate(item.bRoute) },
+                     icon = {
+                         Icon(painter = painterResource(id = item.icon),
+                             contentDescription = item.bTitle )
+                     },
+                     label = {
+                         Text(text = item.bTitle)
+                     },
+                     selectedContentColor = Color.White,
+                     unselectedContentColor = Color.Black)
+             }
+            }
+        }
+    }
     Scaffold(
+        bottomBar = bottomBar,
         topBar = {
-            TopAppBar(title = { Text(text = "Home",
+            TopAppBar(title = { Text(title.value,
                 color = Color.White)},
                 modifier = Modifier.background(
                     Brush.verticalGradient(
@@ -100,7 +133,7 @@ fun MainView() {
                 scaffoldState.drawerState.close()
                }
                         if(item.dRoute == "add_account"){
-                            //open dialog
+                        dialogOpen.value = true
                         }else {
                             controller.navigate(item.dRoute)
                             title.value = item.dTitle
@@ -111,6 +144,8 @@ fun MainView() {
         }
     ) {
       Navigation(navController = controller, viewModel = viewModel, pd =it )
+       AccountDialog(dialogOpen = dialogOpen)
+
     }
 }
 @Composable
@@ -137,14 +172,24 @@ fun DrawerItem(
 @Composable
 fun Navigation(navController: NavController,viewModel: MainViewModel,pd:PaddingValues){
     NavHost(navController = navController as NavHostController,
-        startDestination = Screen.DrawerScreen.AddAccount.route,
+        startDestination = Screen.DrawerScreen.Acccount.route,
         modifier = Modifier.padding(pd)){
-        composable(Screen.DrawerScreen.AddAccount.route){
-
+        composable(Screen.DrawerScreen.Acccount.route){
+          AccountView()
         }
         composable(Screen.DrawerScreen.Subscription.route){
+           Subscription()
+        }
+        composable(Screen.BottomScreen.Home.route){
+            Home()
+        }
+        composable(Screen.BottomScreen.Library.route){
 
         }
+        composable(Screen.BottomScreen.Browse.route){
+
+        }
+
     }
 
 
