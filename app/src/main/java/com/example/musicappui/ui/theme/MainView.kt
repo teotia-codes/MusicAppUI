@@ -42,6 +42,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.musicappui.AccountDialog
 import com.example.musicappui.AccountView
+import com.example.musicappui.BrowseScreen
 import com.example.musicappui.Home
 import com.example.musicappui.MainViewModel
 import com.example.musicappui.Screen
@@ -184,7 +185,7 @@ fun Navigation(navController: NavController,viewModel: MainViewModel,pd:PaddingV
             Home()
         }
         composable(Screen.BottomScreen.Library.route){
-
+       BrowseScreen()
         }
         composable(Screen.BottomScreen.Browse.route){
 
