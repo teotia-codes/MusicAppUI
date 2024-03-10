@@ -30,6 +30,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material.Scaffold
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.rememberModalBottomSheetState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -108,7 +109,11 @@ fun MainView() {
                  val tint = if(isSelected)Color.White else Color.Black
                  Log.d("Navigation", "Item: ${item.bTitle}, Current Route: $currentRoute, Is Selected")
                  BottomNavigationItem(selected = currentRoute == item.bRoute,
-                     onClick = { controller.navigate(item.bRoute) },
+                     onClick = {
+                         controller.navigate(item.bRoute
+                         )
+                               title.value = item.bTitle
+                               },
                      icon = {
 
                          Icon(
@@ -127,17 +132,30 @@ fun MainView() {
         }
     }
 ModalBottomSheetLayout(
+    sheetElevation = 5.dp,
     sheetState = modalSheetState,
     sheetShape = RoundedCornerShape(topStart =roundedCornerRadius, topEnd = roundedCornerRadius ),
     sheetContent = {
     MoreBottomSheet(modifier= modifier)
 } ) {
     Scaffold(
+
         bottomBar = bottomBar,
         topBar = {
             TopAppBar(title = { Text(title.value,
 
                 color = Color.White)},
+                actions ={
+                    IconButton(onClick = {
+                        scope.launch {
+                            if(modalSheetState.isVisible)
+                                modalSheetState.hide()
+                            else modalSheetState.show()
+                        }
+                    }) {
+                        Icon(imageVector = Icons.Default.MoreVert , contentDescription = null)
+                    }
+                },
                 modifier = Modifier.background(
                     Brush.verticalGradient(
                         colors = listOf(
@@ -224,13 +242,25 @@ fun MoreBottomSheet(modifier: Modifier){
           )
   ) {
   Column(modifier = modifier.padding(16.dp),
-      verticalArrangement = Arrangement.SpaceBetween) {
-             Row(modifier= modifier.padding(end = 16.dp)) {
+      verticalArrangement = Arrangement.SpaceEvenly) {
+             Row(modifier= modifier.padding(bottom = 16.dp)) {
                  Icon(painter = painterResource(id = R.drawable.baseline_settings_24),
                      contentDescription = "Settings")
                  Text(text = "Settings", fontSize = 20.sp,
                      color = Color.White)
              }
+      Row(modifier= modifier.padding(bottom = 16.dp)) {
+          Icon(painter = painterResource(id = R.drawable.baseline_ios_share_24),
+              contentDescription = "Share")
+          Text(text = "Share", fontSize = 20.sp,
+              color = Color.White)
+      }
+      Row(modifier= modifier.padding(bottom = 16.dp)) {
+          Icon(painter = painterResource(id = R.drawable.baseline_live_help_24),
+              contentDescription = "Help")
+          Text(text = "Help", fontSize = 20.sp,
+              color = Color.White)
+      }
   }
   }
 }
